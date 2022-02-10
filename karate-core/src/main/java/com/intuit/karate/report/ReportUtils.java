@@ -152,11 +152,12 @@ public class ReportUtils {
 
     public static File saveJunitXml(String targetDir, FeatureResult result, String fileName) {
         DecimalFormat formatter = (DecimalFormat) NumberFormat.getNumberInstance(Locale.US);
-        formatter.applyPattern("0.######");
+        formatter.applyPattern("0.###");
         Document doc = XmlUtils.newDocument();
         Element root = doc.createElement("testsuite");
         doc.appendChild(root);
         root.setAttribute("tests", result.getScenarioCount() + "");
+        root.setAttribute("errors", result.getErrors().size() + "");
         root.setAttribute("failures", result.getFailedCount() + "");
         root.setAttribute("time", formatter.format(result.getDurationMillis() / 1000));
         root.setAttribute("name", result.getDisplayName()); // will be uri

@@ -46,7 +46,7 @@ class KarateFeatureAction(val name: String, val tags: Seq[String], val protocol:
         val finalName = if (customName != null) customName else protocol.defaultNameResolver.apply(req, sr)
         val pauseTime = protocol.pauseFor(finalName, req.getMethod)
         if (pauseTime > 0) pause(pauseTime)
-        return if (customName != null) customName else req.getMethod + " " + finalName
+        if (customName != null) if ("ignore-me".equals(customName)) null else customName else req.getMethod + " " + finalName
       }
 
       override def reportPerfEvent(event: PerfEvent): Unit = {
@@ -65,11 +65,25 @@ class KarateFeatureAction(val name: String, val tags: Seq[String], val protocol:
           vars.remove(KarateProtocol.GATLING_KEY)
           vars.asScala.toMap
         }
-        if (fr.isEmpty || fr.isFailed) {
-          next ! session.markAsFailed.set(KarateProtocol.KARATE_KEY, attributes).setAll(attributes)
+        var updatedSession: Session = if (fr.isEmpty || fr.isFailed) {
+          session.markAsFailed
         } else {
-          next ! session.set(KarateProtocol.KARATE_KEY, attributes).setAll(attributes)
+          session
         }
+
+        updatedSession = updatedSession
+          .set(KarateProtocol.KARATE_KEY, attributes)
+          .setAll(attributes)
+
+        fr.getScenarioResults.asScala foreach { r =>
+          updatedSession = if (r.getRelevantTime == null) {
+            updatedSession.logGroupRequestTimings(r.getStartTime, r.getEndTime)
+          } else {
+            updatedSession.logGroupRequestTimings(0, r.getRelevantTime)
+          }
+        }
+
+        next ! updatedSession
       }
 
       override def pause(millis: java.lang.Number): Unit = pauseFunction.accept(millis)

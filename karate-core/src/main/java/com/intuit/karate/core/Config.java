@@ -157,7 +157,7 @@ public class Config {
                     value = new Variable(Cookies.normalize(value.getValue()));
                 }
                 cookies = value;
-                return false;
+                return true;
             case "responseHeaders":
                 responseHeaders = value;
                 return false;

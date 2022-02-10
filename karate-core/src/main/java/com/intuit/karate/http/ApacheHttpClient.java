@@ -61,8 +61,6 @@ import org.apache.http.client.entity.EntityBuilder;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.RequestBuilder;
 import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.config.Registry;
-import org.apache.http.config.RegistryBuilder;
 import org.apache.http.config.SocketConfig;
 import org.apache.http.conn.ssl.LenientSslConnectionSocketFactory;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
@@ -70,16 +68,13 @@ import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.TrustAllStrategy;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.cookie.Cookie;
-import org.apache.http.cookie.CookieOrigin;
-import org.apache.http.cookie.CookieSpecProvider;
-import org.apache.http.cookie.MalformedCookieException;
 import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.CookieSpecRegistries;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.LaxRedirectStrategy;
 import org.apache.http.impl.conn.SystemDefaultRoutePlanner;
-import org.apache.http.impl.cookie.DefaultCookieSpec;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.ssl.SSLContexts;
@@ -96,32 +91,6 @@ public class ApacheHttpClient implements HttpClient, HttpRequestInterceptor {
 
     private HttpClientBuilder clientBuilder;
     private CookieStore cookieStore;
-
-    public static class LenientCookieSpec extends DefaultCookieSpec {
-        
-        static final String KARATE = "karate";
-
-        public LenientCookieSpec() {
-            super(new String[]{"EEE, dd-MMM-yy HH:mm:ss z", "EEE, dd MMM yyyy HH:mm:ss Z"}, false);
-        }
-
-        @Override
-        public boolean match(Cookie cookie, CookieOrigin origin) {
-            return true;
-        }
-
-        @Override
-        public void validate(Cookie cookie, CookieOrigin origin) throws MalformedCookieException {
-            // do nothing
-        }
-
-        public static Registry<CookieSpecProvider> registry() {
-            CookieSpecProvider specProvider = (HttpContext hc) -> new LenientCookieSpec();
-            return RegistryBuilder.<CookieSpecProvider>create()
-                    .register(KARATE, specProvider).build();
-        }
-
-    }
 
     public ApacheHttpClient(ScenarioEngine engine) {
         this.engine = engine;
@@ -140,7 +109,7 @@ public class ApacheHttpClient implements HttpClient, HttpRequestInterceptor {
         }
         cookieStore = new BasicCookieStore();
         clientBuilder.setDefaultCookieStore(cookieStore);
-        clientBuilder.setDefaultCookieSpecRegistry(LenientCookieSpec.registry());
+        clientBuilder.setDefaultCookieSpecRegistry(CookieSpecRegistries.createDefault());
         clientBuilder.useSystemProperties();
         if (config.isSslEnabled()) {
             // System.setProperty("jsse.enableSNIExtension", "false");
@@ -178,7 +147,6 @@ public class ApacheHttpClient implements HttpClient, HttpRequestInterceptor {
             }
         }
         RequestConfig.Builder configBuilder = RequestConfig.custom()
-                .setCookieSpec(LenientCookieSpec.KARATE)
                 .setConnectTimeout(config.getConnectTimeout())
                 .setSocketTimeout(config.getReadTimeout());
         if (config.getLocalAddress() != null) {
@@ -297,6 +265,7 @@ public class ApacheHttpClient implements HttpClient, HttpRequestInterceptor {
                 map.put(Cookies.NAME, c.getName());
                 map.put(Cookies.VALUE, c.getValue());
                 map.put(Cookies.DOMAIN, c.getDomain());
+                map.put(Cookies.PATH, c.getPath());
                 if (c.getExpiryDate() != null) {
                     map.put(Cookies.MAX_AGE, c.getExpiryDate().getTime());
                 }
@@ -306,12 +275,12 @@ public class ApacheHttpClient implements HttpClient, HttpRequestInterceptor {
                 cookieValues.add(cookieValue);
             }
             // removing is probably not needed since apache cookie handling is enabled, but anyway
-            httpResponse.removeHeaders(HttpConstants.HDR_SET_COOKIE);
+            // httpResponse.removeHeaders(HttpConstants.HDR_SET_COOKIE);
             headers = toHeaders(httpResponse);
             headers.put(HttpConstants.HDR_SET_COOKIE, cookieValues);
-            cookieStore.clear();
+            // cookieStore.clear();
         } else {
-            headers = toHeaders(httpResponse);            
+            headers = toHeaders(httpResponse);
         }
         Response response = new Response(httpResponse.getStatusLine().getStatusCode(), headers, bytes);
         httpLogger.logResponse(getConfig(), request, response);

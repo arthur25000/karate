@@ -620,7 +620,7 @@ public class ScenarioEngine {
         setHiddenVariable(RESPONSE_BYTES, bytes);
         setHiddenVariable(RESPONSE_TYPE, responseType);
         cookies = response.getCookies();
-        updateConfigCookies(cookies);
+        //updateConfigCookies(cookies);
         setHiddenVariable(RESPONSE_COOKIES, cookies);
         startTime = request.getStartTimeMillis(); // in case it was re-adjusted by http client
         long endTime = request.getEndTimeMillis();
@@ -2206,4 +2206,7 @@ public class ScenarioEngine {
         }
     }
 
+    public void relevantTime(Long relevantTime) {
+        runtime.relevantTime(relevantTime);
+    }
 }

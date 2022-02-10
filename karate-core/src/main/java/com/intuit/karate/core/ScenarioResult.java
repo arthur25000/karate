@@ -46,6 +46,7 @@ public class ScenarioResult implements Comparable<ScenarioResult> {
     private String executorName;
     private long startTime;
     private long endTime;
+    private Long relevantTime;
     private long durationNanos;
 
     @Override
@@ -155,12 +156,16 @@ public class ScenarioResult implements Comparable<ScenarioResult> {
         String executorName = (String) map.get("executorName");
         Number startTime = (Number) map.get("startTime");
         Number endTime = (Number) map.get("endTime");
+        Number relevantTime = (Number) map.get("relevantTime");
         sr.setExecutorName(executorName);
         if (startTime != null) {
             sr.setStartTime(startTime.longValue());
         }
         if (endTime != null) {
             sr.setEndTime(endTime.longValue());
+        }
+        if (relevantTime != null) {
+            sr.setRelevantTime(relevantTime.longValue());
         }
         List<Map<String, Object>> list = (List) map.get("stepResults");
         if (list != null) {
@@ -204,6 +209,9 @@ public class ScenarioResult implements Comparable<ScenarioResult> {
         map.put("line", scenario.getLine());
         map.put("executorName", executorName);
         map.put("startTime", startTime);
+        if (relevantTime != null) {
+            map.put("relevantTime", relevantTime);
+        }
         map.put("endTime", endTime);
         List<Map<String, Object>> list = new ArrayList(stepResults.size());
         map.put("stepResults", list);
@@ -320,6 +328,14 @@ public class ScenarioResult implements Comparable<ScenarioResult> {
 
     public void setEndTime(long endTime) {
         this.endTime = endTime;
+    }
+
+    public Long getRelevantTime() {
+        return relevantTime;
+    }
+
+    public void setRelevantTime(Long relevantTime) {
+        this.relevantTime = relevantTime;
     }
 
     @Override

@@ -152,6 +152,10 @@ public class ScenarioRuntime implements Runnable {
         return embed;
     }
 
+    public void relevantTime(Long relevantTime) {
+        result.setRelevantTime(relevantTime);
+    }
+
     private List<FeatureResult> callResults;
 
     public void addCallResult(FeatureResult fr) {
